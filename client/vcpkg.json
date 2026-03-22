@@ -3,6 +3,7 @@
   "dependencies": [
     "liboqs",
     "libzip",
-    "qt6"
+    "qtbase",
+    "qtdeclarative"
   ]
 }

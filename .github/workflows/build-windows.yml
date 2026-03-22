@@ -19,11 +19,12 @@ jobs:
       - name: Bootstrap vcpkg
         working-directory: C:/vcpkg
         run: |
+          git pull origin master
           bootstrap-vcpkg.bat -disableMetrics
 
       - name: Install dependencies
         run: |
-          C:/vcpkg/vcpkg.exe install liboqs:x64-windows qt6:x64-windows libzip:x64-windows
+          C:/vcpkg/vcpkg.exe install liboqs:x64-windows qtbase:x64-windows qtdeclarative:x64-windows libzip:x64-windows
 
       - name: Configure CMake
         shell: bash
@@ -45,7 +46,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path dist -Force
           Copy-Item build/Release/DilithiumClient.exe dist/
-          & "C:/vcpkg/installed/x64-windows/tools/qt6/bin/windeployqt.exe" dist/DilithiumClient.exe --no-translations 2>&1 || true
+          & "C:/vcpkg/installed/x64-windows/tools/qtbase/bin/windeployqt.exe" dist/DilithiumClient.exe --no-translations 2>&1 || true
           Compress-Archive -Path dist/* -DestinationPath DilithiumClient-Windows.zip -Force
 
       - name: Upload artifact
