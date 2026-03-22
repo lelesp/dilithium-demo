@@ -3,6 +3,6 @@
   "dependencies": [
     "liboqs",
     "libzip",
-    "qtbase"
+    "qt6"
   ]
 }
