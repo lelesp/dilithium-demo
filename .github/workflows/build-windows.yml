@@ -1,8 +1,6 @@
 name: Build Windows Executable
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -13,43 +11,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install vcpkg
-        uses: notrynohigh/vcpkg-action@v1.1.4
-        with:
-          vcpkg-git-ref: 2024.11.12
+      - name: Clone vcpkg
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg
+
+      - name: Bootstrap vcpkg
+        working-directory: C:/vcpkg
+        run: |
+          bootstrap-vcpkg.bat -disableMetrics
 
       - name: Install dependencies
         run: |
-          vcpkg install liboqs:x64-windows-static qt6-base:x64-windows-static libzip:x64-windows-static
+          C:/vcpkg/vcpkg.exe install liboqs:x64-windows qt6-base:x64-windows libzip:x64-windows
 
       - name: Configure CMake
+        shell: bash
         run: |
-          mkdir build
+          mkdir -p build
           cd build
-          cmake .. -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=x64-windows-static
+          cmake ../client \
+            -G "Visual Studio 17 2022" -A x64 \
+            -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_TARGET_TRIPLET=x64-windows
 
       - name: Build
         run: |
           cd build
           cmake --build . --config Release
 
-      - name: Show build output
-        run: |
-          ls -la build/Release/
-
       - name: Deploy Qt
+        shell: pwsh
         run: |
-          & "$env:VCPKG_ROOT/installed/x64-windows-static/tools/qt6/bin/windeployqt.exe" build/Release/DilithiumClient.exe
-
-      - name: Create archive
-        run: |
-          $date = Get-Date -Format "yyyyMMdd"
-          Compress-Archive -Path "build/Release/*" -DestinationPath "DilithiumClient-$date.zip"
+          New-Item -ItemType Directory -Path dist -Force
+          Copy-Item build/Release/DilithiumClient.exe dist/
+          & "C:/vcpkg/installed/x64-windows/tools/qt6/bin/windeployqt.exe" dist/DilithiumClient.exe --no-translations
+          Compress-Archive -Path dist/* -DestinationPath DilithiumClient-Windows.zip -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: DilithiumClient-Windows
-          path: DilithiumClient-*.zip
+          path: DilithiumClient-Windows.zip
