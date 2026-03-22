@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>650</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ML-DSA-65 Client - Post-Quantum Digital Signatures</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLabel" name="titleLabel">
+      <property name="text">
+       <string>&lt;h2&gt;Post-Quantum Digital Signature Demo (ML-DSA-65)&lt;/h2&gt;</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="serverLayout">
+      <item>
+       <widget class="QLabel" name="serverLabel">
+        <property name="text">
+         <string>Server URL:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="serverUrlEdit">
+        <property name="text">
+         <string>http://localhost:8000</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QFrame" name="signFrame">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <layout class="QVBoxLayout" name="signLayout">
+       <item>
+        <widget class="QLabel" name="signHeaderLabel">
+         <property name="text">
+          <string>&lt;b&gt;Sign File (Server-side)&lt;/b&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="selectFileLayout">
+         <item>
+          <widget class="QPushButton" name="selectFileBtn">
+           <property name="text">
+            <string>Select File</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="selectedFileLabel">
+           <property name="text">
+            <string>No file selected</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QPushButton" name="signFileBtn">
+         <property name="text">
+          <string>Sign File (via Server)</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QFrame" name="verifyFrame">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <layout class="QVBoxLayout" name="verifyLayout">
+       <item>
+        <widget class="QLabel" name="verifyHeaderLabel">
+         <property name="text">
+          <string>&lt;b&gt;Verify Signature (Local via liboqs)&lt;/b&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="loadZipLayout">
+         <item>
+           <widget class="QPushButton" name="selectSigFileBtn">
+            <property name="text">
+             <string>Load Package</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="sigFileLabel">
+            <property name="text">
+             <string>No package loaded</string>
+            </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="pubKeyLabel">
+         <property name="text">
+          <string>Public Key: -</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="verifyBtn">
+         <property name="text">
+          <string>Verify Signature</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QFrame" name="logFrame">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <layout class="QVBoxLayout" name="logLayout">
+       <item>
+        <widget class="QLabel" name="logHeaderLabel">
+         <property name="text">
+          <string>&lt;b&gt;Log&lt;/b&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTextEdit" name="logText">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+         <property name="maximumHeight">
+          <number>150</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

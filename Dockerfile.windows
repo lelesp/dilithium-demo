@@ -1,0 +1,66 @@
+# Cross-compile Windows exe using MXE built from source
+FROM debian:bookworm-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV MXE_VERSION=25c1c71ab3f1ec6d21ef9feeb24d8bc6eb1fa07e
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    autoconf \
+    automake \
+    autopoint \
+    libtool \
+    bison \
+    flex \
+    gettext \
+    gperf \
+    intltool \
+    pkg-config \
+    python3 \
+    nasm \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+RUN git clone --depth=1 --branch master https://github.com/mxe/mxe.git
+
+ENV PATH="/opt/mxe/usr/bin:$PATH"
+ENV CC=x86_64-w64-mingw32.shared-gcc
+ENV CXX=x86_64-w64-mingw32.shared-g++
+ENV MXE_DISABLE_GCC10=1
+
+WORKDIR /opt/mxe
+RUN make -j$(nproc) \
+    MXE_TARGETS=x86_64-w64-mingw32.shared \
+    gcc \
+    luajit \
+    libpng \
+    libzip \
+    openssl \
+    qt6base
+
+ENV PATH="/opt/mxe/usr/x86_64-w64-mingw32.shared/bin:$PATH"
+ENV Qt6_DIR=/opt/mxe/usr/x86_64-w64-mingw32.shared/qt6/lib/cmake/Qt6
+
+WORKDIR /src
+COPY dilithium-demo /src/client
+
+RUN mkdir -p /src/client/build && \
+    cd /src/client/build && \
+    cmake -G "Unix Makefiles" \
+        -DCMAKE_TOOLCHAIN_FILE=/opt/mxe/usr/share/cmake/mxe-conf.cmake \
+        -DCMAKE_FIND_ROOT_PATH=/opt/mxe/usr \
+        .. && \
+    make -j$(nproc)
+
+WORKDIR /src/client
+RUN mkdir -p deploy && \
+    cp build/DilithiumClient.exe deploy/ && \
+    /opt/mxe/usr/x86_64-w64-mingw32.shared/qt6/bin/windeployqt.exe \
+        --no-translations \
+        deploy/DilithiumClient.exe
+
+CMD cp -r /src/client/deploy /output
