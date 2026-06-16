@@ -94,6 +94,10 @@ if(WIN32)
             ${OQS_TARGET}
             ${ZIP_TARGET}
     )
+    # liboqs generates its umbrella headers (oqs/oqs.h, oqs/oqsconfig.h) into the
+    # build tree and does not expose them on the target's interface when built as
+    # a subproject, so add the generated include dir explicitly.
+    target_include_directories(${PROJECT_NAME} PRIVATE "${liboqs_BINARY_DIR}/include")
     # GUI application: do not open a console window on launch.
     set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
 else()
