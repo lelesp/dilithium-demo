@@ -42,7 +42,6 @@ dilithium-demo/
 │
 ├── client/                          # Qt6 клиент
 │   ├── CMakeLists.txt
-│   ├── vcpkg.json
 │   ├── Dockerfile                   # Arch Linux сборка
 │   └── src/
 │       ├── main.cpp
@@ -124,11 +123,12 @@ make
    релиз **«Windows build (latest)»** → скачайте `DilithiumClient-Windows.zip`.
    (Либо вкладка **Actions** → последний успешный запуск *Build Windows Executable* →
    раздел **Artifacts**.)
-2. Распакуйте архив и запустите `DilithiumClient.exe` — все нужные DLL (Qt, liboqs,
-   libzip) уже лежат рядом.
+2. Распакуйте архив и запустите `DilithiumClient.exe` — все нужные DLL (Qt, libzip)
+   уже лежат рядом (liboqs линкуется статически).
 
-Сборка собирается автоматически через GitHub Actions (prebuilt Qt + vcpkg для
-liboqs/libzip) при каждом пуше в `main` или вручную через
+Сборка собирается автоматически через GitHub Actions (prebuilt Qt + libzip из
+vcpkg; liboqs собирается из исходников через CMake FetchContent без OpenSSL) при
+каждом пуше в `main` или вручную через
 **Actions → Build Windows Executable → Run workflow**.
 
 <details>
@@ -139,7 +139,8 @@ liboqs/libzip) при каждом пуше в `main` или вручную че
 официальный установщик Qt).
 
 ```powershell
-vcpkg install liboqs:x64-windows libzip:x64-windows
+# liboqs тянется и собирается из исходников самим CMake (FetchContent), из vcpkg нужен только libzip
+vcpkg install libzip:x64-windows
 
 cmake -S client -B build -G "Visual Studio 17 2022" -A x64 `
   -DCMAKE_TOOLCHAIN_FILE="<vcpkg>/scripts/buildsystems/vcpkg.cmake" `

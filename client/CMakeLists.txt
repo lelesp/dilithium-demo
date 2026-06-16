@@ -10,9 +10,24 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
 
 if(WIN32)
-    # On Windows liboqs/libzip come from vcpkg and expose CMake config packages.
-    find_package(liboqs CONFIG REQUIRED)
+    # libzip comes from vcpkg (small, no OpenSSL) and exposes a CMake config package.
     find_package(libzip CONFIG REQUIRED)
+
+    # liboqs is built from source instead of vcpkg: the vcpkg port depends on
+    # OpenSSL, which is slow to build under MSVC and fills the CI runner disk.
+    # The client only needs ML-DSA (Dilithium) signature verification, so we
+    # build liboqs statically with its internal crypto (OQS_USE_OPENSSL=OFF).
+    include(FetchContent)
+    set(OQS_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+    set(OQS_BUILD_ONLY_LIB ON CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+        liboqs
+        GIT_REPOSITORY https://github.com/open-quantum-safe/liboqs.git
+        GIT_TAG 0.10.1
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(liboqs)
 else()
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBOQS REQUIRED liboqs)
@@ -24,6 +39,8 @@ endif()
 # and Linux distributions), so the build does not depend on a single spelling.
 if(TARGET OQS::oqs)
     set(OQS_TARGET OQS::oqs)
+elseif(TARGET oqs)
+    set(OQS_TARGET oqs)
 elseif(TARGET liboqs)
     set(OQS_TARGET liboqs)
 else()
