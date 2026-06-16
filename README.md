@@ -60,9 +60,31 @@ dilithium-demo/
 
 ### 1. Запуск сервера
 
+#### Windows (нативно, без Docker)
+
+Требуется только **Python 3.11+** ([python.org](https://www.python.org/)). Redis и Docker не нужны.
+
+```bat
+cd dilithium-demo\server
+run-server.bat
+```
+
+Скрипт создаст виртуальное окружение, установит зависимости и запустит сервер.
+
+#### Linux/macOS (Docker)
+
 ```bash
 cd dilithium-demo/server
 docker compose up -d
+```
+
+#### Linux/macOS (нативно)
+
+```bash
+cd dilithium-demo/server
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 Сервер доступен: `http://localhost:8000`
@@ -70,6 +92,9 @@ docker compose up -d
 Документация API:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+
+> **Примечание:** в `docker-compose.yml` объявлен Redis, но операция подписи его
+> не использует — для демонстрации сервер запускается полностью самостоятельно.
 
 ### 2. Клиент
 
@@ -93,13 +118,38 @@ make
 
 #### Windows
 
-Скачайте готовый релиз из GitHub Actions или соберите самостоятельно:
+Самый простой путь — **скачать готовую сборку** (компилировать ничего не нужно):
+
+1. Откройте страницу [Releases](https://github.com/lelesp/dilithium-demo/releases) →
+   релиз **«Windows build (latest)»** → скачайте `DilithiumClient-Windows.zip`.
+   (Либо вкладка **Actions** → последний успешный запуск *Build Windows Executable* →
+   раздел **Artifacts**.)
+2. Распакуйте архив и запустите `DilithiumClient.exe` — все нужные DLL (Qt, liboqs,
+   libzip) уже лежат рядом.
+
+Сборка собирается автоматически через GitHub Actions (prebuilt Qt + vcpkg для
+liboqs/libzip) при каждом пуше в `main` или вручную через
+**Actions → Build Windows Executable → Run workflow**.
+
+<details>
+<summary>Собрать самостоятельно на Windows (опционально)</summary>
+
+Требуется: Visual Studio 2022 (C++), CMake, [vcpkg](https://github.com/microsoft/vcpkg)
+и Qt 6 (например через [aqtinstall](https://github.com/miurahr/aqtinstall) или
+официальный установщик Qt).
 
 ```powershell
-git clone https://github.com/lelesp/dilithium-demo.git
-cd dilithium-demo
-.\.github\workflows\build-windows.yml
+vcpkg install liboqs:x64-windows libzip:x64-windows
+
+cmake -S client -B build -G "Visual Studio 17 2022" -A x64 `
+  -DCMAKE_TOOLCHAIN_FILE="<vcpkg>/scripts/buildsystems/vcpkg.cmake" `
+  -DVCPKG_TARGET_TRIPLET=x64-windows `
+  -DCMAKE_PREFIX_PATH="<путь-к-Qt>/6.7.2/msvc2019_64"
+
+cmake --build build --config Release
+windeployqt build\Release\DilithiumClient.exe
 ```
+</details>
 
 ### 3. Использование
 

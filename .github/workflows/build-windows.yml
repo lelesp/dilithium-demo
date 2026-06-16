@@ -2,55 +2,92 @@ name: Build Windows Executable
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'client/**'
+      - '.github/workflows/build-windows.yml'
+
+permissions:
+  contents: write
 
 jobs:
   build-windows:
     runs-on: windows-latest
-    
+
+    env:
+      VCPKG_TRIPLET: x64-windows
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone vcpkg
-        run: |
-          if (Test-Path C:/vcpkg) { Remove-Item -Recurse -Force C:/vcpkg }
-          git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg
+      # Prebuilt Qt — installs in minutes instead of building qtbase from source.
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.2'
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          cache: true
 
-      - name: Bootstrap vcpkg
-        working-directory: C:/vcpkg
-        run: |
-          git pull origin master
-          bootstrap-vcpkg.bat -disableMetrics
+      # liboqs + libzip via vcpkg (these build quickly, unlike Qt).
+      - name: Cache vcpkg installed packages
+        uses: actions/cache@v4
+        with:
+          path: C:/vcpkg/installed
+          key: vcpkg-${{ env.VCPKG_TRIPLET }}-liboqs-libzip-v1
 
-      - name: Install dependencies
-        run: |
-          C:/vcpkg/vcpkg.exe install liboqs:x64-windows qtbase:x64-windows qtdeclarative:x64-windows libzip:x64-windows
-
-      - name: Configure CMake
-        shell: bash
-        run: |
-          mkdir -p build
-          cd build
-          cmake ../client \
-            -G "Visual Studio 17 2022" -A x64 \
-            -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" \
-            -DVCPKG_TARGET_TRIPLET=x64-windows
-
-      - name: Build
-        run: |
-          cd build
-          cmake --build . --config Release
-
-      - name: Deploy Qt
+      - name: Install dependencies (vcpkg)
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path dist -Force
+          & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install `
+            liboqs:$env:VCPKG_TRIPLET `
+            libzip:$env:VCPKG_TRIPLET
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake -S client -B build `
+            -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET="$env:VCPKG_TRIPLET" `
+            -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Assemble distribution
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
           Copy-Item build/Release/DilithiumClient.exe dist/
-          & "C:/vcpkg/installed/x64-windows/tools/qtbase/bin/windeployqt.exe" dist/DilithiumClient.exe --no-translations 2>&1 || true
-          Compress-Archive -Path dist/* -DestinationPath DilithiumClient-Windows.zip -Force
+
+          # Bundle Qt runtime (DLLs, platform plugins, etc.).
+          & "$env:QT_ROOT_DIR/bin/windeployqt.exe" dist/DilithiumClient.exe --release --no-translations --no-opengl-sw
+
+          # Bundle vcpkg runtime DLLs (liboqs/libzip and their dependencies).
+          Copy-Item "$env:VCPKG_INSTALLATION_ROOT/installed/$env:VCPKG_TRIPLET/bin/*.dll" dist/ -ErrorAction SilentlyContinue
+
+      - name: Package ZIP
+        shell: pwsh
+        run: Compress-Archive -Path dist/* -DestinationPath DilithiumClient-Windows.zip -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: DilithiumClient-Windows
           path: DilithiumClient-Windows.zip
+
+      - name: Publish rolling release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows-latest
+          name: Windows build (latest)
+          body: |
+            Latest automatically built Windows client.
+            Download `DilithiumClient-Windows.zip`, extract, and run `DilithiumClient.exe`.
+          files: DilithiumClient-Windows.zip
+          make_latest: true
