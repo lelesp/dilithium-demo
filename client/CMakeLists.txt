@@ -21,10 +21,15 @@ if(WIN32)
     set(OQS_USE_OPENSSL OFF CACHE BOOL "" FORCE)
     set(OQS_BUILD_ONLY_LIB ON CACHE BOOL "" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    # Pin liboqs 0.15.0: it implements FINAL FIPS 204 ML-DSA, matching the
+    # Linux system liboqs and the server's dilithium-py. liboqs 0.10.x only
+    # shipped the pre-final "ipd" ML-DSA (and used different algorithm names),
+    # which is NOT interoperable with FIPS 204 signatures, so verification of
+    # server-produced packages always failed on the Windows build.
     FetchContent_Declare(
         liboqs
         GIT_REPOSITORY https://github.com/open-quantum-safe/liboqs.git
-        GIT_TAG 0.10.1
+        GIT_TAG 0.15.0
         GIT_SHALLOW TRUE
     )
     FetchContent_MakeAvailable(liboqs)

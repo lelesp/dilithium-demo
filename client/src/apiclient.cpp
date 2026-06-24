@@ -14,19 +14,25 @@ ApiClient::ApiClient(const QString& baseUrl, QObject* parent)
 {
 }
 
-void ApiClient::signFile(const QString& filePath) {
+void ApiClient::signFile(const QString& filePath, const QString& algorithm) {
     QUrl url(m_baseUrl + "/api/sign");
     QNetworkRequest request(url);
-    
+
     QHttpMultiPart* multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
-    
+
     QFile* file = new QFile(filePath);
     if (!file->open(QIODevice::ReadOnly)) {
         emit errorOccurred("Cannot open file: " + filePath);
         delete multiPart;
         return;
     }
-    
+
+    QHttpPart algorithmPart;
+    algorithmPart.setHeader(QNetworkRequest::ContentDispositionHeader,
+                            QVariant("form-data; name=\"algorithm\""));
+    algorithmPart.setBody(algorithm.toUtf8());
+    multiPart->append(algorithmPart);
+
     QHttpPart filePart;
     QFileInfo fileInfo(filePath);
     QString fileName = fileInfo.fileName();

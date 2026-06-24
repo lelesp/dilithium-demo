@@ -1,0 +1,89 @@
+name: Build Windows Server Executable
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'server/**'
+      - '.github/workflows/build-server-windows.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-server-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        shell: pwsh
+        working-directory: server
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      # Build a single self-contained .exe. The demo's sign flow does not touch
+      # Redis, so it is excluded from the bundle. --collect-all pulls in the
+      # uvicorn and dilithium-py submodules that PyInstaller's static analysis
+      # would otherwise miss.
+      - name: Build executable (PyInstaller)
+        shell: pwsh
+        working-directory: server
+        run: |
+          pyinstaller --noconfirm --onefile --name dilithium-server `
+            --collect-all uvicorn `
+            --collect-all dilithium_py `
+            --hidden-import app.main `
+            --paths . `
+            --exclude-module redis `
+            run_server.py
+
+      - name: Assemble distribution
+        shell: pwsh
+        working-directory: server
+        run: |
+          New-Item -ItemType Directory -Path dist-pkg -Force | Out-Null
+          Copy-Item dist/dilithium-server.exe dist-pkg/
+          @"
+          ML-DSA signature server (standalone)
+
+          Run dilithium-server.exe and open http://127.0.0.1:8000/docs
+          No Python, pip, Docker or Redis required.
+
+          Optional environment variables:
+            HOST  (default 127.0.0.1)
+            PORT  (default 8000)
+          "@ | Out-File -Encoding utf8 dist-pkg/README.txt
+
+      - name: Package ZIP
+        shell: pwsh
+        working-directory: server
+        run: Compress-Archive -Path dist-pkg/* -DestinationPath DilithiumServer-Windows.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DilithiumServer-Windows
+          path: server/DilithiumServer-Windows.zip
+
+      - name: Publish rolling release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: server-windows-latest
+          name: Windows server build (latest)
+          body: |
+            Latest automatically built standalone Windows server.
+            Download `DilithiumServer-Windows.zip`, extract, and run
+            `dilithium-server.exe`. No dependencies required.
+          files: server/DilithiumServer-Windows.zip
+          make_latest: false

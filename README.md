@@ -59,7 +59,18 @@ dilithium-demo/
 
 ### 1. Запуск сервера
 
-#### Windows (нативно, без Docker)
+#### Windows (готовый .exe, без зависимостей)
+
+Ничего устанавливать не нужно — ни Python, ни pip, ни Redis.
+
+1. На странице релизов выберите **«Windows server build (latest)»** → скачайте
+   `DilithiumServer-Windows.zip` (либо вкладка **Actions** → последний успешный
+   запуск *Build Windows Server Executable* → артефакт `DilithiumServer-Windows`).
+2. Распакуйте и запустите `dilithium-server.exe`.
+3. Сервер поднимется на `http://127.0.0.1:8000` (Swagger UI: `/docs`).
+   Порт/хост можно переопределить переменными окружения `PORT` и `HOST`.
+
+#### Windows (из исходников, без Docker)
 
 Требуется только **Python 3.11+** ([python.org](https://www.python.org/)). Redis и Docker не нужны.
 

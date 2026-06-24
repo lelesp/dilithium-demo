@@ -2,10 +2,11 @@ import io
 import zipfile
 import os
 import logging
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.crypto import DilithiumCrypto
+from app.crypto.dilithium import DEFAULT_ALGORITHM
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -14,21 +15,33 @@ router = APIRouter(prefix="/api", tags=["dilithium"])
 
 
 @router.post("/sign")
-async def sign_file(file: UploadFile = File(...)):
+async def sign_file(
+    file: UploadFile = File(...),
+    algorithm: str = Form(DEFAULT_ALGORITHM),
+):
+    if algorithm not in DilithiumCrypto.SUPPORTED:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported algorithm '{algorithm}'. "
+                f"Choose one of: {', '.join(DilithiumCrypto.SUPPORTED)}"
+            ),
+        )
     try:
-        pk, sk = DilithiumCrypto.generate_keypair()
-        
+        logger.info(f"Signing with algorithm: {algorithm}")
+        pk, sk = DilithiumCrypto.generate_keypair(algorithm)
+
         pk_hex = pk.hex() if isinstance(pk, bytes) else pk
         sk_hex = sk.hex() if isinstance(sk, bytes) else sk
-        
+
         logger.info(f"pk_hex length: {len(pk_hex)}")
-        
+
         sk_bytes = bytes.fromhex(sk_hex)
         file_content = await file.read()
-        
+
         logger.info(f"file_content length: {len(file_content)}")
-        
-        signature = DilithiumCrypto.sign(sk_bytes, file_content)
+
+        signature = DilithiumCrypto.sign(sk_bytes, file_content, algorithm)
         
         if isinstance(signature, str):
             signature_hex = signature
@@ -73,5 +86,6 @@ async def sign_file(file: UploadFile = File(...)):
 async def health_check():
     return {
         "status": "healthy",
-        "algorithm": "ML-DSA-65"
+        "default_algorithm": DEFAULT_ALGORITHM,
+        "supported_algorithms": list(DilithiumCrypto.SUPPORTED),
     }

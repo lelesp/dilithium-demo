@@ -16,14 +16,17 @@ MainWindow::MainWindow(QWidget* parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    
+
+    ui->algorithmCombo->addItems({"ML-DSA-44", "ML-DSA-65", "ML-DSA-87"});
+    ui->algorithmCombo->setCurrentText(Crypto::ALGORITHM);
+
     connect(ui->selectFileBtn, &QPushButton::clicked, this, &MainWindow::onSelectFileClicked);
     connect(ui->signFileBtn, &QPushButton::clicked, this, &MainWindow::onSignFileClicked);
     connect(ui->selectSigFileBtn, &QPushButton::clicked, this, &MainWindow::onSelectSigFileClicked);
     connect(ui->verifyBtn, &QPushButton::clicked, this, &MainWindow::onVerifyClicked);
-    
-    logMessage("ML-DSA-65 Client initialized");
-    logMessage("Algorithm: " + Crypto::ALGORITHM);
+
+    logMessage("ML-DSA Client initialized");
+    logMessage("Default algorithm: " + Crypto::ALGORITHM);
 }
 
 MainWindow::~MainWindow() {
@@ -55,9 +58,10 @@ void MainWindow::onSignFileClicked() {
     
     connect(client, &ApiClient::fileSigned, this, &MainWindow::onFileSigned);
     connect(client, &ApiClient::errorOccurred, this, &MainWindow::onApiError);
-    
-    logMessage("Sending file for signing...");
-    client->signFile(m_currentFilePath);
+
+    const QString algorithm = ui->algorithmCombo->currentText();
+    logMessage("Sending file for signing (" + algorithm + ")...");
+    client->signFile(m_currentFilePath, algorithm);
 }
 
 void MainWindow::onFileSigned(const QByteArray& zipData) {
@@ -195,7 +199,15 @@ void MainWindow::onVerifyClicked() {
     
     logMessage("Verifying signature...");
     logMessage("  File size: " + QString::number(m_currentFileData.size()) + " bytes");
-    
+
+    const int sigBytesLen = Crypto::hexToBytes(m_currentSignature).size();
+    const QString detected = Crypto::detectAlgorithm(sigBytesLen);
+    if (detected.isEmpty()) {
+        logMessage("  Algorithm: UNKNOWN (signature is " + QString::number(sigBytesLen) + " bytes)");
+    } else {
+        logMessage("  Algorithm (auto-detected): " + detected);
+    }
+
     bool isValid = Crypto::verifySignature(
         m_currentPublicKey.toLatin1(),
         m_currentFileData,

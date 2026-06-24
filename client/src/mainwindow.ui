@@ -78,11 +78,25 @@
         </layout>
        </item>
        <item>
-        <widget class="QPushButton" name="signFileBtn">
-         <property name="text">
-          <string>Sign File (via Server)</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="algorithmLayout">
+         <item>
+          <widget class="QLabel" name="algorithmLabel">
+           <property name="text">
+            <string>Algorithm:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="algorithmCombo"/>
+         </item>
+         <item>
+          <widget class="QPushButton" name="signFileBtn">
+           <property name="text">
+            <string>Sign File (via Server)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>

@@ -13,7 +13,7 @@ class ApiClient : public QObject {
 public:
     explicit ApiClient(const QString& baseUrl, QObject* parent = nullptr);
     
-    void signFile(const QString& filePath);
+    void signFile(const QString& filePath, const QString& algorithm);
     
 signals:
     void fileSigned(const QByteArray& zipData);
